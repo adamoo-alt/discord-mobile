@@ -3,84 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Mobile Panel</title>
+    <title>Discord Mobile Control Hub</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1e1f22; color: #dbdee1; padding: 15px; }
+        :root {
+            --bg-primary: #313338;
+            --bg-secondary: #2b2d31;
+            --bg-tertiary: #1e1f22;
+            --accent: #5865f2;
+            --accent-hover: #4752c4;
+            --success: #248046;
+            --danger: #da373c;
+            --text-normal: #dbdee1;
+            --text-muted: #949ba4;
+            --border: #3f4147;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'gg sans', 'Noto Sans', -apple-system, sans-serif; }
+        body { background-color: var(--bg-tertiary); color: var(--text-normal); padding: 12px; font-size: 14px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg-secondary); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); }
+        .header h1 { font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+
+        .card { background: var(--bg-secondary); padding: 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
         
-        h1 { font-size: 18px; color: #fff; margin-bottom: 15px; }
-        .card { background: #2b2d31; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #1f2023; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; width: 100%; transition: background 0.2s; margin-top: 6px; }
+        .btn:active { transform: scale(0.98); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #4e5058; }
+
+        .accounts-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
+        .account-pill { display: flex; align-items: center; gap: 8px; background: var(--bg-primary); padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border); white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+        .account-pill.active { border-color: var(--accent); background: #393c43; }
+        .account-pill img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+
+        input, select { width: 100%; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-normal); border-radius: 8px; margin-top: 6px; margin-bottom: 12px; font-size: 14px; outline: none; }
+        input:focus, select:focus { border-color: var(--accent); }
         
-        .btn { display: inline-block; background: #5865f2; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; text-align: center; width: 100%; margin-top: 5px; }
-        .btn-success { background: #248046; }
-        .btn-danger { background: #da373c; }
-        
-        .account-item { display: flex; justify-content: space-between; align-items: center; background: #313338; padding: 10px; border-radius: 6px; margin-top: 8px; border: 1px solid transparent; cursor: pointer; }
-        .account-item.selected { border-color: #5865f2; background: #2b2d31; }
-        
-        input, select { width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #383a40; color: #dbdee1; border-radius: 6px; margin-top: 8px; margin-bottom: 12px; font-size: 14px; }
-        label { font-size: 12px; color: #949ba4; font-weight: bold; text-transform: uppercase; }
-        
+        label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-top: 8px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .log-box { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; color: #b5bac1; max-height: 120px; overflow-y: auto; margin-top: 8px; }
+
         #control-panel { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>Panel Zarządzania Discord</h1>
-
-    <div id="login-screen" class="card" style="display:none;">
-        <p style="margin-bottom: 12px; font-size: 14px; color: #949ba4;">Dodaj konto przez autoryzację:</p>
-        <a id="auth-link" href="#" class="btn">Zaloguj konto przez Discorda</a>
+    <div class="header">
+        <h1>💬 Discord Mobile Hub</h1>
+        <span id="account-count" style="font-size: 12px; color: var(--text-muted);">0 kont</span>
     </div>
 
-    <div class="card">
-        <h3 style="font-size: 15px; color: #fff; margin-bottom: 10px;">Twoje połączone konta</h3>
-        <div id="accounts-list"></div>
-        <button onclick="addAnotherAccount()" class="btn btn-success" style="margin-top: 12px;">+ Dodaj kolejne konto</button>
+    <!-- Pasek wyboru kont (Poziome kafelki w stylu mobilnym) -->
+    <div class="card" style="padding: 12px;">
+        <label>Twoje połączone konta</label>
+        <div id="accounts-scroll" class="accounts-scroll">
+            <!-- Generowane dynamicznie -->
+        </div>
+        <button onclick="addAnotherAccount()" class="btn btn-success" style="margin-top: 4px;">+ Dodaj kolejne konto</button>
     </div>
 
-    <!-- Panel Sterowania Wybranym Kontem -->
-    <div id="control-panel" class="card">
-        <h3 style="font-size: 15px; color: #fff; margin-bottom: 12px;">Zarządzasz kontem: <span id="active-username" style="color: #5865f2;">-</span></h3>
+    <!-- Ekran logowania gdy brak kont -->
+    <div id="login-screen" class="card" style="display:none; text-align: center; padding: 24px;">
+        <p style="margin-bottom: 16px; color: var(--text-muted);">Brak autoryzowanych kont. Połącz pierwsze konto przez OAuth2:</p>
+        <a id="auth-link" href="#" class="btn">Zaloguj przez Discorda</a>
+    </div>
+
+    <!-- Główny Panel Zarządzania Wybranym Kontem -->
+    <div id="control-panel">
         
-        <div style="margin-bottom: 15px;">
-            <label>Dołącz na Serwer (Kod Zaproszenia)</label>
+        <!-- Profil i Szybkie Akcje -->
+        <div class="card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                <img id="active-avatar" src="" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-primary);">
+                <div>
+                    <h3 id="active-username" style="font-size: 16px; color: #fff;">-</h3>
+                    <span id="active-id" style="font-size: 11px; color: var(--text-muted);">ID: -</span>
+                </div>
+            </div>
+            
+            <div class="grid-2">
+                <button onclick="removeActiveAccount()" class="btn btn-danger">Wyloguj konto</button>
+                <button onclick="logoutAll()" class="btn btn-secondary">Reset all</button>
+            </div>
+        </div>
+
+        <!-- Edycja Profilu (Nazwa / Awatar) -->
+        <div class="card">
+            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">👤 Edycja profilu</h3>
+            <label>Nowy Pseudonim (Global Name / Username)</label>
+            <input type="text" id="new-username" placeholder="Wpisz nową nazwę">
+            <button onclick="updateProfileName()" class="btn">Zmień nazwę konta</button>
+        </div>
+
+        <!-- Zarządzanie Serwerami i Dołączanie -->
+        <div class="card">
+            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">🚀 Serwery i Dołączanie</h3>
+            <label>Kod Zaproszenia lub Link</label>
             <input type="text" id="invite-code" placeholder="np. discord lub dsc.gg/twojkod">
             <button onclick="joinServer()" class="btn btn-success">Dołącz na Serwer</button>
         </div>
 
-        <div style="margin-bottom: 15px; border-top: 1px solid #383a40; padding-top: 15px;">
-            <label>Konfiguracja RPC / Aktywność Gry</label>
-            <input type="text" id="rpc-game" placeholder="Nazwa gry / status (np. Brawl Stars)">
-            <input type="text" id="rpc-details" placeholder="Szczegóły (np. Pushing 1000 trophies)">
-            <input type="text" id="rpc-image" placeholder="URL lub klucz ikony (np. logo_gry)">
-            <label style="display: flex; align-items: center; gap: 8px; margin-top: 5px; cursor: pointer;">
-                <input type="checkbox" id="rpc-timestamp" style="width: auto; margin: 0;"> Dodaj znacznik czasu (Elapsed Time)
-            </label>
-            <button onclick="saveRpcConfig()" class="btn" style="margin-top: 10px;">Zapisz ustawienia RPC</button>
+        <!-- Symulacja / Status RPC -->
+        <div class="card">
+            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">🎮 Aktywność i RPC (Rich Presence)</h3>
+            <label>Nazwa aplikacji / Gry</label>
+            <input type="text" id="rpc-game" placeholder="np. Brawl Stars">
+            
+            <label>Szczegóły (Details)</label>
+            <input type="text" id="rpc-details" placeholder="np. Pushing 1200 trophies">
+            
+            <div class="grid-2">
+                <div>
+                    <label>Grafika (Large Image Key)</label>
+                    <input type="text" id="rpc-image" placeholder="np. brawler_brock">
+                </div>
+                <div>
+                    <label>Timestamp</label>
+                    <button onclick="toggleTimestamp()" id="ts-btn" class="btn btn-secondary" style="margin-top: 6px;">Czas: OFF</button>
+                </div>
+            </div>
+            <button onclick="saveRpcConfig()" class="btn" style="margin-top: 8px;">Zapisz i Symuluj RPC</button>
         </div>
 
-        <div>
-            <label>Akcje Sesji</label>
-            <button onclick="removeActiveAccount()" class="btn btn-danger">Wyloguj / Usuń to konto</button>
+        <!-- Konsola / Logi operacji -->
+        <div class="card">
+            <h3 style="font-size: 14px; color: #fff; margin-bottom: 4px;">📋 Konsola Operacyjna</h3>
+            <div id="log-box" class="log-box">Panel gotowy do pracy...</div>
         </div>
-    </div>
 
-    <div class="card">
-        <button onclick="logoutAll()" class="btn btn-danger" style="background: #963c3c;">Wyczyść wszystkie sesje</button>
     </div>
 
     <script>
         const CLIENT_ID = "1529564710083629241"; 
         const REDIRECT_URI = window.location.origin + window.location.pathname;
-        
-        // Zaktualizowany link autoryzacyjny zgodny z Twoim zapytaniem
         const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=guilds.join+identify+guilds+guilds.members.read+rpc.notifications.read`;
 
         document.getElementById('auth-link').href = discordAuthUrl;
 
         let accounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
         let selectedAccountId = localStorage.getItem('selected_discord_id') || (accounts.length > 0 ? accounts[0].id : null);
+        let timestampActive = false;
 
         window.addEventListener('DOMContentLoaded', () => {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -93,45 +158,69 @@
                 .then(res => res.json())
                 .then(user => {
                     if (user.id) {
+                        const avatarUrl = user.avatar 
+                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
+                            : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
                         const existsIndex = accounts.findIndex(acc => acc.id === user.id);
+                        const accountData = {
+                            id: user.id,
+                            username: user.username,
+                            avatar: avatarUrl,
+                            token: accessToken,
+                            rpc: { game: '', details: '', image: '', useTimestamp: false, startTime: null }
+                        };
+
                         if (existsIndex > -1) {
                             accounts[existsIndex].token = accessToken;
+                            accounts[existsIndex].avatar = avatarUrl;
+                            accounts[existsIndex].username = user.username;
                         } else {
-                            accounts.push({ id: user.id, username: user.username, token: accessToken, rpc: {} });
+                            accounts.push(accountData);
                         }
+
                         localStorage.setItem('discord_accounts', JSON.stringify(accounts));
                         localStorage.setItem('selected_discord_id', user.id);
                         window.history.replaceState({}, document.title, window.location.pathname);
                         location.reload();
                     }
-                }).catch(err => console.error(err));
+                }).catch(err => logMessage("Błąd autoryzacji tokena: " + err));
             }
 
             renderUI();
         });
 
+        function logMessage(text) {
+            const box = document.getElementById('log-box');
+            box.innerHTML += `> ${text}<br>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
         function renderUI() {
+            document.getElementById('account-count').innerText = `${accounts.length} kont`;
+
             if (accounts.length === 0) {
                 document.getElementById('login-screen').style.display = 'block';
+                document.getElementById('control-panel').style.display = 'none';
                 return;
             }
 
-            const listContainer = document.getElementById('accounts-list');
-            listContainer.innerHTML = '';
+            const scrollContainer = document.getElementById('accounts-scroll');
+            scrollContainer.innerHTML = '';
 
             accounts.forEach((acc) => {
-                const div = document.createElement('div');
-                div.className = `account-item ${acc.id === selectedAccountId ? 'selected' : ''}`;
-                div.innerHTML = `
-                    <span style="font-size: 14px; font-weight: 500;"><b>${acc.username}</b></span>
-                    <span style="font-size: 12px; color: #949ba4;">${acc.id === selectedAccountId ? '▶ Aktywne' : 'Wybierz'}</span>
+                const pill = document.createElement('div');
+                pill.className = `account-pill ${acc.id === selectedAccountId ? 'active' : ''}`;
+                pill.innerHTML = `
+                    <img src="${acc.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}">
+                    <span><b>${acc.username}</b></span>
                 `;
-                div.onclick = () => {
+                pill.onclick = () => {
                     selectedAccountId = acc.id;
                     localStorage.setItem('selected_discord_id', acc.id);
                     renderUI();
                 };
-                listContainer.appendChild(div);
+                scrollContainer.appendChild(pill);
             });
 
             if (selectedAccountId) {
@@ -139,67 +228,120 @@
                 if (currentAcc) {
                     document.getElementById('control-panel').style.display = 'block';
                     document.getElementById('active-username').innerText = currentAcc.username;
-                    
-                    // Wczytaj zapisane RPC dla tego konta jeśli istnieje
+                    document.getElementById('active-id').innerText = `ID: ${currentAcc.id}`;
+                    document.getElementById('active-avatar').src = currentAcc.avatar;
+
                     if (currentAcc.rpc) {
                         document.getElementById('rpc-game').value = currentAcc.rpc.game || '';
                         document.getElementById('rpc-details').value = currentAcc.rpc.details || '';
                         document.getElementById('rpc-image').value = currentAcc.rpc.image || '';
-                        document.getElementById('rpc-timestamp').checked = currentAcc.rpc.useTimestamp || false;
+                        timestampActive = currentAcc.rpc.useTimestamp || false;
+                        updateTimestampBtn();
                     }
                 }
             }
         }
 
-        function getActiveToken() {
-            const acc = accounts.find(a => a.id === selectedAccountId);
-            return acc ? acc.token : null;
+        function getActiveAccount() {
+            return accounts.find(a => a.id === selectedAccountId);
         }
 
         async function joinServer() {
             let input = document.getElementById('invite-code').value.trim();
             const code = input.split('/').pop();
-            const token = getActiveToken();
+            const acc = getActiveAccount();
 
-            if (!code || !token) {
-                alert('Podaj kod zaproszenia i upewnij się, że konto jest wybrane!');
+            if (!code || !acc) {
+                alert('Wprowadź kod zaproszenia i upewnij się, że konto jest wybrane.');
                 return;
             }
+
+            logMessage(`Próba dołączenia konta ${acc.username} do zaproszenia: ${code}...`);
 
             try {
                 const res = await fetch(`https://discord.com/api/v10/invites/${code}`, {
                     method: 'POST',
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${acc.token}` }
                 });
+                
                 if (res.ok) {
+                    logMessage(`[SUKCES] Konto ${acc.username} pomyślnie dołączyło na serwer!`);
                     alert('Sukces! Konto dołączyło na serwer.');
                 } else {
                     const data = await res.json();
-                    alert('Błąd dołączania: ' + (data.message || 'Nieznany'));
+                    logMessage(`[BŁĄD] Kod ${res.status}: ${data.message || 'Odrzucono'}`);
+                    alert('Błąd dołączania: ' + (data.message || 'Brak uprawnień lub zły kod'));
                 }
             } catch (e) {
-                alert('Błąd sieciowy.');
+                logMessage(`[SIEC] Błąd połączenia z API Discorda.`);
+                alert('Wystąpił błąd sieciowy.');
             }
         }
 
-        function saveRpcConfig() {
-            const game = document.getElementById('rpc-game').value;
-            const details = document.getElementById('rpc-details').value;
-            const image = document.getElementById('rpc-image').value;
-            const useTimestamp = document.getElementById('rpc-timestamp').checked;
+        async function updateProfileName() {
+            const newName = document.getElementById('new-username').value.trim();
+            const acc = getActiveAccount();
 
-            const accIndex = accounts.findIndex(a => a.id === selectedAccountId);
-            if (accIndex > -1) {
-                accounts[accIndex].rpc = {
-                    game,
-                    details,
-                    image,
-                    useTimestamp,
-                    startTime: useTimestamp ? Date.now() : null
-                };
-                localStorage.setItem('discord_accounts', JSON.stringify(accounts));
-                alert('Konfiguracja RPC została zapisana w pamięci panelu!');
+            if (!newName || !acc) {
+                alert('Wpisz nową nazwę użytkownika.');
+                return;
             }
+
+            logMessage(`Wysyłanie żądania zmiany nazwy dla ${acc.username} na "${newName}"...`);
+
+            try {
+                const res = await fetch('https://discord.com/api/v10/users/@me', {
+                    method: 'PATCH',
+                    headers: { 
+                        'Authorization': `Bearer ${acc.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: newName })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    acc.username = data.username;
+                    localStorage.setItem('discord_accounts', JSON.stringify(accounts));
+                    logMessage(`[SUKCES] Zmieniono nazwę na: ${data.username}`);
+                    alert('Nazwa została pomyślnie zmieniona!');
+                    renderUI();
+                } else {
+                    const err = await res.json();
+                    logMessage(`[BŁĄD ZMIANY NAZWY]: ${JSON.stringify(err)}`);
+                    alert('Discord odrzucił zmianę nazwy (częste ograniczenia rate-limit lub unikalność).');
+                }
+            } catch (e) {
+                logMessage(`[BŁĄD]: Nie udało się połączyć z API.`);
+            }
+        }
+
+        function toggleTimestamp() {
+            timestampActive = !timestampActive;
+            updateTimestampBtn();
+        }
+
+        function updateTimestampBtn() {
+            const btn = document.getElementById('ts-btn');
+            btn.innerText = timestampActive ? "Czas: ON" : "Czas: OFF";
+            btn.className = timestampActive ? "btn btn-success" : "btn btn-secondary";
+        }
+
+        function saveRpcConfig() {
+            const acc = getActiveAccount();
+            if (!acc) return;
+
+            acc.rpc = {
+                game: document.getElementById('rpc-game').value,
+                details: document.getElementById('rpc-details').value,
+                image: document.getElementById('rpc-image').value,
+                useTimestamp: timestampActive,
+                startTime: timestampActive ? (acc.rpc.startTime || Date.now()) : null
+            };
+
+            localStorage.setItem('discord_accounts', JSON.stringify(accounts));
+            logMessage(`[RPC] Zapisano ustawienia aktywności dla ${acc.username}`);
+            alert('Konfiguracja RPC została zapisana w pamięci panelu.');
         }
 
         function addAnotherAccount() {
@@ -207,6 +349,7 @@
         }
 
         function removeActiveAccount() {
+            if (!selectedAccountId) return;
             accounts = accounts.filter(acc => acc.id !== selectedAccountId);
             localStorage.setItem('discord_accounts', JSON.stringify(accounts));
             localStorage.removeItem('selected_discord_id');
@@ -214,8 +357,10 @@
         }
 
         function logoutAll() {
-            localStorage.clear();
-            location.reload();
+            if (confirm('Na pewno wyczyścić wszystkie konta?')) {
+                localStorage.clear();
+                location.reload();
+            }
         }
     </script>
 </body>
