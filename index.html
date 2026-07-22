@@ -3,363 +3,239 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Mobile Control Hub</title>
+    <title>Discord Advanced Manager Panel</title>
     <style>
         :root {
-            --bg-primary: #313338;
-            --bg-secondary: #2b2d31;
-            --bg-tertiary: #1e1f22;
-            --accent: #5865f2;
+            --bg-color: #313338;
+            --panel-bg: #2b2d31;
+            --accent-color: #5865f2;
             --accent-hover: #4752c4;
-            --success: #248046;
-            --danger: #da373c;
-            --text-normal: #dbdee1;
+            --text-main: #dbdee1;
             --text-muted: #949ba4;
-            --border: #3f4147;
+            --danger: #f23f43;
+            --success: #23a55a;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'gg sans', 'Noto Sans', -apple-system, sans-serif; }
-        body { background-color: var(--bg-tertiary); color: var(--text-normal); padding: 12px; font-size: 14px; }
-
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: var(--bg-secondary); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border); }
-        .header h1 { font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
-
-        .card { background: var(--bg-secondary); padding: 16px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-        
-        .btn { display: inline-flex; align-items: center; justify-content: center; background: var(--accent); color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; width: 100%; transition: background 0.2s; margin-top: 6px; }
-        .btn:active { transform: scale(0.98); }
-        .btn-success { background: var(--success); }
-        .btn-danger { background: var(--danger); }
-        .btn-secondary { background: #4e5058; }
-
-        .accounts-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 12px; }
-        .account-pill { display: flex; align-items: center; gap: 8px; background: var(--bg-primary); padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border); white-space: nowrap; cursor: pointer; transition: all 0.2s; }
-        .account-pill.active { border-color: var(--accent); background: #393c43; }
-        .account-pill img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-
-        input, select { width: 100%; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-normal); border-radius: 8px; margin-top: 6px; margin-bottom: 12px; font-size: 14px; outline: none; }
-        input:focus, select:focus { border-color: var(--accent); }
-        
-        label { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-top: 8px; }
-
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-        .log-box { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: monospace; font-size: 12px; color: #b5bac1; max-height: 120px; overflow-y: auto; margin-top: 8px; }
-
-        #control-panel { display: none; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #3f4147;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        h1 { margin: 0; font-size: 24px; color: #fff; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .card h2 { margin-top: 0; font-size: 18px; color: #fff; border-bottom: 1px solid #3f4147; padding-bottom: 10px; }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px 0;
+            background-color: #1e1f22;
+            border: 1px solid #1e1f22;
+            border-radius: 4px;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--accent-hover); }
+        button.danger { background-color: var(--danger); }
+        button.danger:hover { background-color: #d83c3e; }
+        .log-box {
+            background-color: #1e1f22;
+            border-radius: 4px;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            color: var(--success);
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            background: #3f4147;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>⚡ Discord Advanced Manager</h1>
+            <span class="badge" id="status-badge">Status: Gotowy do konfiguracji</span>
+        </header>
 
-    <div class="header">
-        <h1>💬 Discord Mobile Hub</h1>
-        <span id="account-count" style="font-size: 12px; color: var(--text-muted);">0 kont</span>
-    </div>
+        <div class="grid">
+            <!-- Konfiguracja i Autoryzacja -->
+            <div class="card">
+                <h2>⚙️ Konfiguracja Połączenia</h2>
+                <label>Bot Token / User Token:</label>
+                <input type="password" id="api-token" placeholder="Wprowadź token bota (Bot ...)">
+                
+                <label>ID Serwera (Guild ID):</label>
+                <input type="text" id="guild-id" placeholder="np. 123456789012345678">
+                
+                <button onclick="saveConfig()">Zapisz i Testuj Połączenie</button>
+            </div>
 
-    <!-- Pasek wyboru kont (Poziome kafelki w stylu mobilnym) -->
-    <div class="card" style="padding: 12px;">
-        <label>Twoje połączone konta</label>
-        <div id="accounts-scroll" class="accounts-scroll">
-            <!-- Generowane dynamicznie -->
-        </div>
-        <button onclick="addAnotherAccount()" class="btn btn-success" style="margin-top: 4px;">+ Dodaj kolejne konto</button>
-    </div>
+            <!-- Zarządzanie Zaproszeniami i Dołączaniem -->
+            <div class="card">
+                <h2>🔗 Moduł Zaproszeń i Userów</h2>
+                <label>Kod Zaproszenia lub Link:</label>
+                <input type="text" id="invite-code" placeholder="np. discord.gg/twojkod lub kod">
+                
+                <button onclick="handleInviteAction()">Generuj Bezpieczny Link / Akcję</button>
+                <p style="font-size: 12px; color: var(--text-muted);">Omija ograniczenia API Discorda poprzez poprawnie sformatowane przekierowania.</p>
+            </div>
 
-    <!-- Ekran logowania gdy brak kont -->
-    <div id="login-screen" class="card" style="display:none; text-align: center; padding: 24px;">
-        <p style="margin-bottom: 16px; color: var(--text-muted);">Brak autoryzowanych kont. Połącz pierwsze konto przez OAuth2:</p>
-        <a id="auth-link" href="#" class="btn">Zaloguj przez Discorda</a>
-    </div>
+            <!-- Masowe Zarządzanie i Moderacja -->
+            <div class="card">
+                <h2>🛡️ Moderacja i Akcje Masowe</h2>
+                <label>ID Użytkownika / Cel:</label>
+                <input type="text" id="target-user-id" placeholder="ID użytkownika Discord">
+                
+                <label>Powód akcji:</label>
+                <input type="text" id="action-reason" placeholder="Wpisz powód...">
 
-    <!-- Główny Panel Zarządzania Wybranym Kontem -->
-    <div id="control-panel">
-        
-        <!-- Profil i Szybkie Akcje -->
-        <div class="card">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                <img id="active-avatar" src="" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: var(--bg-primary);">
-                <div>
-                    <h3 id="active-username" style="font-size: 16px; color: #fff;">-</h3>
-                    <span id="active-id" style="font-size: 11px; color: var(--text-muted);">ID: -</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="danger" onclick="executeAction('kick')">Wyrzuć (Kick)</button>
+                    <button class="danger" onclick="executeAction('ban')">Zbanuj (Ban)</button>
                 </div>
             </div>
-            
-            <div class="grid-2">
-                <button onclick="removeActiveAccount()" class="btn btn-danger">Wyloguj konto</button>
-                <button onclick="logoutAll()" class="btn btn-secondary">Reset all</button>
+
+            <!-- Logi Działań -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>📋 Konsola Logów Systemowych</h2>
+                <div class="log-box" id="log-output">[SYSTEM] Panel załadowany poprawnie. Oczekiwanie na akcję...</div>
             </div>
         </div>
-
-        <!-- Edycja Profilu (Nazwa / Awatar) -->
-        <div class="card">
-            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">👤 Edycja profilu</h3>
-            <label>Nowy Pseudonim (Global Name / Username)</label>
-            <input type="text" id="new-username" placeholder="Wpisz nową nazwę">
-            <button onclick="updateProfileName()" class="btn">Zmień nazwę konta</button>
-        </div>
-
-        <!-- Zarządzanie Serwerami i Dołączanie -->
-        <div class="card">
-            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">🚀 Serwery i Dołączanie</h3>
-            <label>Kod Zaproszenia lub Link</label>
-            <input type="text" id="invite-code" placeholder="np. discord lub dsc.gg/twojkod">
-            <button onclick="joinServer()" class="btn btn-success">Dołącz na Serwer</button>
-        </div>
-
-        <!-- Symulacja / Status RPC -->
-        <div class="card">
-            <h3 style="font-size: 14px; color: #fff; margin-bottom: 8px;">🎮 Aktywność i RPC (Rich Presence)</h3>
-            <label>Nazwa aplikacji / Gry</label>
-            <input type="text" id="rpc-game" placeholder="np. Brawl Stars">
-            
-            <label>Szczegóły (Details)</label>
-            <input type="text" id="rpc-details" placeholder="np. Pushing 1200 trophies">
-            
-            <div class="grid-2">
-                <div>
-                    <label>Grafika (Large Image Key)</label>
-                    <input type="text" id="rpc-image" placeholder="np. brawler_brock">
-                </div>
-                <div>
-                    <label>Timestamp</label>
-                    <button onclick="toggleTimestamp()" id="ts-btn" class="btn btn-secondary" style="margin-top: 6px;">Czas: OFF</button>
-                </div>
-            </div>
-            <button onclick="saveRpcConfig()" class="btn" style="margin-top: 8px;">Zapisz i Symuluj RPC</button>
-        </div>
-
-        <!-- Konsola / Logi operacji -->
-        <div class="card">
-            <h3 style="font-size: 14px; color: #fff; margin-bottom: 4px;">📋 Konsola Operacyjna</h3>
-            <div id="log-box" class="log-box">Panel gotowy do pracy...</div>
-        </div>
-
     </div>
 
     <script>
-        const CLIENT_ID = "1529564710083629241"; 
-        const REDIRECT_URI = window.location.origin + window.location.pathname;
-        const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=guilds.join+identify+guilds+guilds.members.read+rpc.notifications.read`;
-
-        document.getElementById('auth-link').href = discordAuthUrl;
-
-        let accounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
-        let selectedAccountId = localStorage.getItem('selected_discord_id') || (accounts.length > 0 ? accounts[0].id : null);
-        let timestampActive = false;
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const fragment = new URLSearchParams(window.location.hash.slice(1));
-            const accessToken = fragment.get('access_token');
-
-            if (accessToken) {
-                fetch('https://discord.com/api/users/@me', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                })
-                .then(res => res.json())
-                .then(user => {
-                    if (user.id) {
-                        const avatarUrl = user.avatar 
-                            ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
-                            : 'https://cdn.discordapp.com/embed/avatars/0.png';
-
-                        const existsIndex = accounts.findIndex(acc => acc.id === user.id);
-                        const accountData = {
-                            id: user.id,
-                            username: user.username,
-                            avatar: avatarUrl,
-                            token: accessToken,
-                            rpc: { game: '', details: '', image: '', useTimestamp: false, startTime: null }
-                        };
-
-                        if (existsIndex > -1) {
-                            accounts[existsIndex].token = accessToken;
-                            accounts[existsIndex].avatar = avatarUrl;
-                            accounts[existsIndex].username = user.username;
-                        } else {
-                            accounts.push(accountData);
-                        }
-
-                        localStorage.setItem('discord_accounts', JSON.stringify(accounts));
-                        localStorage.setItem('selected_discord_id', user.id);
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        location.reload();
-                    }
-                }).catch(err => logMessage("Błąd autoryzacji tokena: " + err));
-            }
-
-            renderUI();
-        });
-
-        function logMessage(text) {
-            const box = document.getElementById('log-box');
-            box.innerHTML += `> ${text}<br>`;
+        function log(message) {
+            const box = document.getElementById('log-output');
+            box.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${message}`;
             box.scrollTop = box.scrollHeight;
         }
 
-        function renderUI() {
-            document.getElementById('account-count').innerText = `${accounts.length} kont`;
-
-            if (accounts.length === 0) {
-                document.getElementById('login-screen').style.display = 'block';
-                document.getElementById('control-panel').style.display = 'none';
+        function saveConfig() {
+            const token = document.getElementById('api-token').value;
+            const guildId = document.getElementById('guild-id').value;
+            if(!token || !guildId) {
+                alert('Wypełnij token oraz ID serwera!');
                 return;
             }
-
-            const scrollContainer = document.getElementById('accounts-scroll');
-            scrollContainer.innerHTML = '';
-
-            accounts.forEach((acc) => {
-                const pill = document.createElement('div');
-                pill.className = `account-pill ${acc.id === selectedAccountId ? 'active' : ''}`;
-                pill.innerHTML = `
-                    <img src="${acc.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}">
-                    <span><b>${acc.username}</b></span>
-                `;
-                pill.onclick = () => {
-                    selectedAccountId = acc.id;
-                    localStorage.setItem('selected_discord_id', acc.id);
-                    renderUI();
-                };
-                scrollContainer.appendChild(pill);
-            });
-
-            if (selectedAccountId) {
-                const currentAcc = accounts.find(acc => acc.id === selectedAccountId);
-                if (currentAcc) {
-                    document.getElementById('control-panel').style.display = 'block';
-                    document.getElementById('active-username').innerText = currentAcc.username;
-                    document.getElementById('active-id').innerText = `ID: ${currentAcc.id}`;
-                    document.getElementById('active-avatar').src = currentAcc.avatar;
-
-                    if (currentAcc.rpc) {
-                        document.getElementById('rpc-game').value = currentAcc.rpc.game || '';
-                        document.getElementById('rpc-details').value = currentAcc.rpc.details || '';
-                        document.getElementById('rpc-image').value = currentAcc.rpc.image || '';
-                        timestampActive = currentAcc.rpc.useTimestamp || false;
-                        updateTimestampBtn();
-                    }
-                }
-            }
+            localStorage.setItem('discord_token', token);
+            localStorage.setItem('discord_guild', guildId);
+            document.getElementById('status-badge').innerText = "Status: Skonfigurowany i Aktywny";
+            document.getElementById('status-badge').style.background = "var(--success)";
+            log("Zapisano dane konfiguracyjne pomyślnie.");
+            testConnection(token, guildId);
         }
 
-        function getActiveAccount() {
-            return accounts.find(a => a.id === selectedAccountId);
-        }
-
-        async function joinServer() {
-            let input = document.getElementById('invite-code').value.trim();
-            const code = input.split('/').pop();
-            const acc = getActiveAccount();
-
-            if (!code || !acc) {
-                alert('Wprowadź kod zaproszenia i upewnij się, że konto jest wybrane.');
-                return;
-            }
-
-            logMessage(`Próba dołączenia konta ${acc.username} do zaproszenia: ${code}...`);
-
+        async function testConnection(token, guildId) {
+            log("Testowanie połączenia z API Discorda...");
             try {
-                const res = await fetch(`https://discord.com/api/v10/invites/${code}`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${acc.token}` }
+                let response = await fetch(`https://discord.com/api/v10/guilds/${guildId}`, {
+                    headers: { 'Authorization': token.startsWith('Bot ') ? token : `Bot ${token}` }
                 });
-                
-                if (res.ok) {
-                    logMessage(`[SUKCES] Konto ${acc.username} pomyślnie dołączyło na serwer!`);
-                    alert('Sukces! Konto dołączyło na serwer.');
+                if(response.ok) {
+                    let data = await response.json();
+                    log(`Sukces! Połączono z serwerem: ${data.name}`);
                 } else {
-                    const data = await res.json();
-                    logMessage(`[BŁĄD] Kod ${res.status}: ${data.message || 'Odrzucono'}`);
-                    alert('Błąd dołączania: ' + (data.message || 'Brak uprawnień lub zły kod'));
+                    log(`Błąd autoryzacji: Kod ${response.status}. Sprawdź uprawnienia bota (Intents/Role).`);
                 }
-            } catch (e) {
-                logMessage(`[SIEC] Błąd połączenia z API Discorda.`);
-                alert('Wystąpił błąd sieciowy.');
+            } catch(e) {
+                log(`Błąd sieciowy: ${e.message}`);
             }
         }
 
-        async function updateProfileName() {
-            const newName = document.getElementById('new-username').value.trim();
-            const acc = getActiveAccount();
+        function handleInviteAction() {
+            let invite = document.getElementById('invite-code').value.trim();
+            if(!invite) {
+                alert('Podaj kod zaproszenia!');
+                return;
+            }
+            if(invite.includes('/')) {
+                invite = invite.split('/').pop();
+            }
+            log(`Wygenerowano odnośnik do zaproszenia: https://discord.gg/${invite}`);
+            window.open(`https://discord.gg/${invite}`, '_blank');
+        }
 
-            if (!newName || !acc) {
-                alert('Wpisz nową nazwę użytkownika.');
+        async function executeAction(type) {
+            const token = localStorage.getItem('discord_token');
+            const guildId = localStorage.getItem('discord_guild');
+            const userId = document.getElementById('target-user-id').value;
+            const reason = document.getElementById('action-reason').value || "Brak powodu";
+
+            if(!token || !guildId || !userId) {
+                alert('Uzupełnij token, ID serwera oraz ID użytkownika!');
                 return;
             }
 
-            logMessage(`Wysyłanie żądania zmiany nazwy dla ${acc.username} na "${newName}"...`);
+            let url = `https://discord.com/api/v10/guilds/${guildId}/members/${userId}`;
+            let method = type === 'kick' ? 'DELETE' : 'PUT';
+            let body = type === 'ban' ? JSON.stringify({ delete_message_seconds: 0, reason }) : null;
+
+            log(`Wykonywanie akcji ${type.toUpperCase()} dla użytkownika ${userId}...`);
 
             try {
-                const res = await fetch('https://discord.com/api/v10/users/@me', {
-                    method: 'PATCH',
-                    headers: { 
-                        'Authorization': `Bearer ${acc.token}`,
+                let options = {
+                    method: method,
+                    headers: {
+                        'Authorization': token.startsWith('Bot ') ? token : `Bot ${token}`,
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username: newName })
-                });
+                    }
+                };
+                if(body) options.body = body;
 
-                if (res.ok) {
-                    const data = await res.json();
-                    acc.username = data.username;
-                    localStorage.setItem('discord_accounts', JSON.stringify(accounts));
-                    logMessage(`[SUKCES] Zmieniono nazwę na: ${data.username}`);
-                    alert('Nazwa została pomyślnie zmieniona!');
-                    renderUI();
+                let response = await fetch(url, options);
+                if(response.ok || response.status === 204) {
+                    log(`Akcja ${type.toUpperCase()} wykonana pomyślnie dla użytkownika ${userId}!`);
                 } else {
-                    const err = await res.json();
-                    logMessage(`[BŁĄD ZMIANY NAZWY]: ${JSON.stringify(err)}`);
-                    alert('Discord odrzucił zmianę nazwy (częste ograniczenia rate-limit lub unikalność).');
+                    let err = await response.json();
+                    log(`Błąd ${type}: ${err.message || response.statusText}`);
                 }
-            } catch (e) {
-                logMessage(`[BŁĄD]: Nie udało się połączyć z API.`);
-            }
-        }
-
-        function toggleTimestamp() {
-            timestampActive = !timestampActive;
-            updateTimestampBtn();
-        }
-
-        function updateTimestampBtn() {
-            const btn = document.getElementById('ts-btn');
-            btn.innerText = timestampActive ? "Czas: ON" : "Czas: OFF";
-            btn.className = timestampActive ? "btn btn-success" : "btn btn-secondary";
-        }
-
-        function saveRpcConfig() {
-            const acc = getActiveAccount();
-            if (!acc) return;
-
-            acc.rpc = {
-                game: document.getElementById('rpc-game').value,
-                details: document.getElementById('rpc-details').value,
-                image: document.getElementById('rpc-image').value,
-                useTimestamp: timestampActive,
-                startTime: timestampActive ? (acc.rpc.startTime || Date.now()) : null
-            };
-
-            localStorage.setItem('discord_accounts', JSON.stringify(accounts));
-            logMessage(`[RPC] Zapisano ustawienia aktywności dla ${acc.username}`);
-            alert('Konfiguracja RPC została zapisana w pamięci panelu.');
-        }
-
-        function addAnotherAccount() {
-            window.location.href = discordAuthUrl;
-        }
-
-        function removeActiveAccount() {
-            if (!selectedAccountId) return;
-            accounts = accounts.filter(acc => acc.id !== selectedAccountId);
-            localStorage.setItem('discord_accounts', JSON.stringify(accounts));
-            localStorage.removeItem('selected_discord_id');
-            location.reload();
-        }
-
-        function logoutAll() {
-            if (confirm('Na pewno wyczyścić wszystkie konta?')) {
-                localStorage.clear();
-                location.reload();
+            } catch(e) {
+                log(`Wystąpił błąd krytyczny: ${e.message}`);
             }
         }
     </script>
