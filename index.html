@@ -3,90 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile Multi-Account Discord Manager</title>
+    <title>Discord Mobile Panel</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1e1f22; color: #dbdee1; height: 100vh; display: flex; flex-direction: column; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1e1f22; color: #dbdee1; padding: 15px; }
         
-        header { background: #2b2d31; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2023; }
-        h1 { font-size: 16px; color: #fff; }
+        h1 { font-size: 18px; color: #fff; margin-bottom: 15px; }
+        .card { background: #2b2d31; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #1f2023; }
         
-        .toolbar { display: flex; gap: 5px; overflow-x: auto; padding: 8px; background: #2b2d31; border-bottom: 1px solid #1f2023; }
-        .tab-btn { background: #35363c; border: none; color: #dbdee1; padding: 6px 12px; border-radius: 4px; font-size: 13px; cursor: pointer; white-space: nowrap; }
-        .tab-btn.active { background: #5865f2; color: #fff; }
-        .add-btn { background: #248046; color: #fff; }
-
-        .container { flex: 1; position: relative; width: 100%; height: calc(100vh - 100px); }
-        .account-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; display: none; background: #313338; }
-        .account-view.active { display: block; }
+        .btn { display: inline-block; background: #5865f2; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; text-align: center; }
+        .btn-success { background: #248046; }
+        .btn-danger { background: #da373c; margin-top: 10px; }
         
-        .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 20px; text-align: center; }
-        .welcome-screen button { padding: 12px 24px; background: #5865f2; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        .account-item { display: flex; justify-content: space-between; align-items: center; background: #313338; padding: 10px; border-radius: 6px; margin-top: 8px; }
+        
+        #dashboard { display: none; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>Discord Multi-Manager</h1>
-        <span id="account-count" style="font-size: 12px; color: #949ba4;">Konta: 0</span>
-    </header>
+    <h1>Panel Zarządzania Discord</h1>
 
-    <div class="toolbar" id="toolbar">
-        <button class="tab-btn add-btn" onclick="addNewAccount()">+ Dodaj Konto</button>
+    <!-- Ekran logowania (widoczny gdy brak kont) -->
+    <div id="login-screen" class="card">
+        <p style="margin-bottom: 12px; font-size: 14px; color: #949ba4;">Dodaj swoje pierwsze konto przez autoryzację OAuth2:</p>
+        <a id="auth-link" href="#" class="btn">Zaloguj konto przez Discorda</a>
     </div>
 
-    <div class="container" id="container">
-        <div id="welcome" class="welcome-screen account-view active">
-            <h2>Brak aktywnych sesji</h2>
-            <p style="color: #949ba4; margin-top: 5px; font-size: 14px;">Kliknij przycisk poniżej, aby dodać pierwszą instancję konta Discord.</p>
-            <button onclick="addNewAccount()">Stwórz instancję konta</button>
+    <!-- Panel główny (widoczny po zalogowaniu) -->
+    <div id="dashboard">
+        <div class="card">
+            <h3 style="font-size: 15px; color: #fff; margin-bottom: 10px;">Twoje połączone konta</h3>
+            <div id="accounts-list"></div>
+            <button onclick="addAnotherAccount()" class="btn btn-success" style="width: 100%; margin-top: 12px;">+ Dodaj kolejne konto</button>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 15px; color: #fff; margin-bottom: 8px;">Panel Narzędzi / Metryk</h3>
+            <p style="font-size: 13px; color: #949ba4;">Wybierz konto powyżej, aby zarządzać jego sesją.</p>
+            <button onclick="logoutAll()" class="btn btn-danger">Wyczyść wszystkie zapisane sesje</button>
         </div>
     </div>
 
     <script>
-        let accounts = [];
-        let activeId = null;
+        // UWAGA: Musisz zastąpić poniższy string swoim Client ID z aplikacji stworzonej na Discord Developer Portal
+        const CLIENT_ID = "1529564710083629241"; 
+        
+        // Automatyczne wykrycie aktualnego adresu GitHub Pages jako URL powrotnego
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
 
-        function addNewAccount() {
-            const id = Date.now();
-            accounts.push(id);
-            
-            // Tworzenie przycisku w pasku
-            const toolbar = document.getElementById('toolbar');
-            const btn = document.createElement('button');
-            btn.className = 'tab-btn';
-            btn.id = `btn-${id}`;
-            btn.innerText = `Konto ${accounts.length}`;
-            btn.onclick = () => switchAccount(id);
-            toolbar.insertBefore(btn, toolbar.lastElementChild);
+        // Link autoryzacyjny Discorda
+        const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
 
-            // Tworzenie ramki dla Discorda
-            const container = document.getElementById('container');
-            const iframe = document.createElement('iframe');
-            iframe.className = 'account-view';
-            iframe.id = `view-${id}`;
-            iframe.src = 'https://discord.com/login';
-            container.appendChild(iframe);
+        document.getElementById('auth-link').href = discordAuthUrl;
 
-            document.getElementById('welcome').style.display = 'none';
-            switchAccount(id);
-            updateCounter();
+        // Sprawdzanie czy wróciliśmy z tokenem z Discorda w adresie URL (hash)
+        window.addEventListener('DOMContentLoaded', () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
+
+            let savedAccounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
+
+            if (accessToken) {
+                // Pobieramy dane użytkownika za pomocą tokena
+                fetch('https://discord.com/api/users/@me', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                .then(res => res.json())
+                .then(user => {
+                    if (user.id) {
+                        // Sprawdzamy czy konto już istnieje, jak nie to dodajemy
+                        const exists = savedAccounts.some(acc => acc.id === user.id);
+                        if (!exists) {
+                            savedAccounts.push({
+                                id: user.id,
+                                username: user.username,
+                                token: accessToken
+                            });
+                            localStorage.setItem('discord_accounts', JSON.stringify(savedAccounts));
+                        }
+                        // Czyścimy adres URL z tokena ze względów bezpieczeństwa
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        location.reload();
+                    }
+                }).catch(err => console.error("Błąd pobierania danych użytkownika:", err));
+            }
+
+            renderDashboard(savedAccounts);
+        });
+
+        function renderDashboard(accounts) {
+            if (accounts.length > 0) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+
+                const listContainer = document.getElementById('accounts-list');
+                listContainer.innerHTML = '';
+
+                accounts.forEach((acc, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'account-item';
+                    div.innerHTML = `
+                        <span style="font-size: 14px; font-weight: 500;">Konto ${index + 1}: <b>${acc.username}</b></span>
+                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; margin:0;" onclick="removeAccount('${acc.id}')">Usuń</button>
+                    `;
+                    listContainer.appendChild(div);
+                });
+            }
         }
 
-        function switchAccount(id) {
-            activeId = id;
-            document.querySelectorAll('.account-view').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-
-            const targetView = document.getElementById(`view-${id}`);
-            const targetBtn = document.getElementById(`btn-${id}`);
-            
-            if (targetView) targetView.classList.add('active');
-            if (targetBtn) targetBtn.classList.add('active');
+        function addAnotherAccount() {
+            window.location.href = discordAuthUrl;
         }
 
-        function updateCounter() {
-            document.getElementById('account-count').innerText = `Konta: ${accounts.length}`;
+        function removeAccount(id) {
+            let savedAccounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
+            savedAccounts = savedAccounts.filter(acc => acc.id !== id);
+            localStorage.setItem('discord_accounts', JSON.stringify(savedAccounts));
+            location.reload();
+        }
+
+        function logoutAll() {
+            localStorage.removeItem('discord_accounts');
+            location.reload();
         }
     </script>
 </body>
