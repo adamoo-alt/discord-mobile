@@ -11,120 +11,184 @@
         h1 { font-size: 18px; color: #fff; margin-bottom: 15px; }
         .card { background: #2b2d31; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #1f2023; }
         
-        .btn { display: inline-block; background: #5865f2; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; text-align: center; }
+        .btn { display: inline-block; background: #5865f2; color: white; padding: 10px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; font-weight: 500; border: none; cursor: pointer; text-align: center; width: 100%; margin-top: 5px; }
         .btn-success { background: #248046; }
-        .btn-danger { background: #da373c; margin-top: 10px; }
+        .btn-danger { background: #da373c; }
+        .btn-secondary { background: #4e5058; }
         
-        .account-item { display: flex; justify-content: space-between; align-items: center; background: #313338; padding: 10px; border-radius: 6px; margin-top: 8px; }
+        .account-item { display: flex; justify-content: space-between; align-items: center; background: #313338; padding: 10px; border-radius: 6px; margin-top: 8px; border: 1px solid transparent; cursor: pointer; }
+        .account-item.selected { border-color: #5865f2; background: #2b2d31; }
         
-        #dashboard { display: none; }
+        input, select { width: 100%; padding: 10px; background: #1e1f22; border: 1px solid #383a40; color: #dbdee1; border-radius: 6px; margin-top: 8px; margin-bottom: 12px; font-size: 14px; }
+        label { font-size: 12px; color: #949ba4; font-weight: bold; text-transform: uppercase; }
+        
+        #control-panel { display: none; }
     </style>
 </head>
 <body>
 
     <h1>Panel Zarządzania Discord</h1>
 
-    <!-- Ekran logowania (widoczny gdy brak kont) -->
-    <div id="login-screen" class="card">
-        <p style="margin-bottom: 12px; font-size: 14px; color: #949ba4;">Dodaj swoje pierwsze konto przez autoryzację OAuth2:</p>
+    <!-- Ekran logowania -->
+    <div id="login-screen" class="card" style="display:none;">
+        <p style="margin-bottom: 12px; font-size: 14px; color: #949ba4;">Dodaj konto przez autoryzację OAuth2:</p>
         <a id="auth-link" href="#" class="btn">Zaloguj konto przez Discorda</a>
     </div>
 
-    <!-- Panel główny (widoczny po zalogowaniu) -->
-    <div id="dashboard">
-        <div class="card">
-            <h3 style="font-size: 15px; color: #fff; margin-bottom: 10px;">Twoje połączone konta</h3>
-            <div id="accounts-list"></div>
-            <button onclick="addAnotherAccount()" class="btn btn-success" style="width: 100%; margin-top: 12px;">+ Dodaj kolejne konto</button>
+    <!-- Lista kont -->
+    <div class="card">
+        <h3 style="font-size: 15px; color: #fff; margin-bottom: 10px;">Twoje połączone konta</h3>
+        <div id="accounts-list"></div>
+        <button onclick="addAnotherAccount()" class="btn btn-success" style="margin-top: 12px;">+ Dodaj kolejne konto</button>
+    </div>
+
+    <!-- Panel Sterowania Wybranym Kontem -->
+    <div id="control-panel" class="card">
+        <h3 style="font-size: 15px; color: #fff; margin-bottom: 12px;">Zarządzasz kontem: <span id="active-username" style="color: #5865f2;">-</span></h3>
+        
+        <div style="margin-bottom: 15px;">
+            <label>Niestandardowy Status (RPC / Gra)</label>
+            <input type="text" id="status-text" placeholder="np. Psuję serwery / Gram w gry">
+            <button onclick="updateStatus()" class="btn">Ustaw Status</button>
         </div>
 
-        <div class="card">
-            <h3 style="font-size: 15px; color: #fff; margin-bottom: 8px;">Panel Narzędzi / Metryk</h3>
-            <p style="font-size: 13px; color: #949ba4;">Wybierz konto powyżej, aby zarządzać jego sesją.</p>
-            <button onclick="logoutAll()" class="btn btn-danger">Wyczyść wszystkie zapisane sesje</button>
+        <div style="margin-bottom: 15px;">
+            <label>Dołącz na Serwer (Kod Zaproszenia lub Link)</label>
+            <input type="text" id="invite-code" placeholder="np. discord / dsc.gg/twojkod">
+            <button onclick="joinServer()" class="btn btn-success">Dołącz na Serwer</button>
+        </div>
+
+        <div>
+            <label>Akcje Sesji</label>
+            <button onclick="removeActiveAccount()" class="btn btn-danger">Wyloguj / Usuń to konto</button>
         </div>
     </div>
 
-    <script>
-        // UWAGA: Musisz zastąpić poniższy string swoim Client ID z aplikacji stworzonej na Discord Developer Portal
-        const CLIENT_ID = "1529564710083629241"; 
-        
-        // Automatyczne wykrycie aktualnego adresu GitHub Pages jako URL powrotnego
-        const REDIRECT_URI = window.location.origin + window.location.pathname;
+    <div class="card">
+        <button onclick="logoutAll()" class="btn btn-danger" style="background: #963c3c;">Wyczyść wszystkie sesje</button>
+    </div>
 
-        // Link autoryzacyjny Discorda
-        const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds`;
+    <script>
+        const CLIENT_ID = "1529564710083629241"; 
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+        const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds%20guilds.join`;
 
         document.getElementById('auth-link').href = discordAuthUrl;
 
-        // Sprawdzanie czy wróciliśmy z tokenem z Discorda w adresie URL (hash)
+        let accounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
+        let selectedAccountId = localStorage.getItem('selected_discord_id') || (accounts.length > 0 ? accounts[0].id : null);
+
         window.addEventListener('DOMContentLoaded', () => {
             const fragment = new URLSearchParams(window.location.hash.slice(1));
             const accessToken = fragment.get('access_token');
 
-            let savedAccounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
-
             if (accessToken) {
-                // Pobieramy dane użytkownika za pomocą tokena
                 fetch('https://discord.com/api/users/@me', {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 })
                 .then(res => res.json())
                 .then(user => {
                     if (user.id) {
-                        // Sprawdzamy czy konto już istnieje, jak nie to dodajemy
-                        const exists = savedAccounts.some(acc => acc.id === user.id);
-                        if (!exists) {
-                            savedAccounts.push({
-                                id: user.id,
-                                username: user.username,
-                                token: accessToken
-                            });
-                            localStorage.setItem('discord_accounts', JSON.stringify(savedAccounts));
+                        const existsIndex = accounts.findIndex(acc => acc.id === user.id);
+                        if (existsIndex > -1) {
+                            accounts[existsIndex].token = accessToken; // aktualizuj token
+                        } else {
+                            accounts.push({ id: user.id, username: user.username, token: accessToken });
                         }
-                        // Czyścimy adres URL z tokena ze względów bezpieczeństwa
+                        localStorage.setItem('discord_accounts', JSON.stringify(accounts));
+                        localStorage.setItem('selected_discord_id', user.id);
                         window.history.replaceState({}, document.title, window.location.pathname);
                         location.reload();
                     }
-                }).catch(err => console.error("Błąd pobierania danych użytkownika:", err));
+                }).catch(err => console.error(err));
             }
 
-            renderDashboard(savedAccounts);
+            renderUI();
         });
 
-        function renderDashboard(accounts) {
-            if (accounts.length > 0) {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('dashboard').style.display = 'block';
-
-                const listContainer = document.getElementById('accounts-list');
-                listContainer.innerHTML = '';
-
-                accounts.forEach((acc, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'account-item';
-                    div.innerHTML = `
-                        <span style="font-size: 14px; font-weight: 500;">Konto ${index + 1}: <b>${acc.username}</b></span>
-                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; margin:0;" onclick="removeAccount('${acc.id}')">Usuń</button>
-                    `;
-                    listContainer.appendChild(div);
-                });
+        function renderUI() {
+            if (accounts.length === 0) {
+                document.getElementById('login-screen').style.display = 'block';
+                return;
             }
+
+            const listContainer = document.getElementById('accounts-list');
+            listContainer.innerHTML = '';
+
+            accounts.forEach((acc) => {
+                const div = document.createElement('div');
+                div.className = `account-item ${acc.id === selectedAccountId ? 'selected' : ''}`;
+                div.innerHTML = `
+                    <span style="font-size: 14px; font-weight: 500;"><b>${acc.username}</b></span>
+                    <span style="font-size: 12px; color: #949ba4;">${acc.id === selectedAccountId ? '▶ Aktywne' : 'Kliknij, aby wybrać'}</span>
+                `;
+                div.onclick = () => {
+                    selectedAccountId = acc.id;
+                    localStorage.setItem('selected_discord_id', acc.id);
+                    renderUI();
+                };
+                listContainer.appendChild(div);
+            });
+
+            if (selectedAccountId) {
+                const currentAcc = accounts.find(acc => acc.id === selectedAccountId);
+                if (currentAcc) {
+                    document.getElementById('control-panel').style.display = 'block';
+                    document.getElementById('active-username').innerText = currentAcc.username;
+                }
+            }
+        }
+
+        function getActiveToken() {
+            const acc = accounts.find(a => a.id === selectedAccountId);
+            return acc ? acc.token : null;
+        }
+
+        // Przykładowa funkcja dołączania na serwer przez zaproszenie
+        async function joinServer() {
+            let input = document.getElementById('invite-code').value.trim();
+            // wyciąganie czystego kodu z linku np. discord.gg/kod -> kod
+            const code = input.split('/').pop();
+            const token = getActiveToken();
+
+            if (!code || !token) {
+                alert('Podaj poprawny kod zaproszenia i wybierz konto!');
+                return;
+            }
+
+            try {
+                const res = await fetch(`https://discord.com/api/v10/invites/${code}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    alert('Sukces! Konto dołączyło na serwer.');
+                } else {
+                    const data = await res.json();
+                    alert('Błąd dołączania: ' + (data.message || 'Nieznany błąd'));
+                }
+            } catch (e) {
+                alert('Wystąpił błąd sieciowy.');
+            }
+        }
+
+        function updateStatus() {
+            alert('Funkcja ustawiania niestandardowego statusu w przygotowaniu dla wybranego tokena OAuth2 (wymaga odpowiednich uprawnień gateway/websocket).');
         }
 
         function addAnotherAccount() {
             window.location.href = discordAuthUrl;
         }
 
-        function removeAccount(id) {
-            let savedAccounts = JSON.parse(localStorage.getItem('discord_accounts') || '[]');
-            savedAccounts = savedAccounts.filter(acc => acc.id !== id);
-            localStorage.setItem('discord_accounts', JSON.stringify(savedAccounts));
+        function removeActiveAccount() {
+            accounts = accounts.filter(acc => acc.id !== selectedAccountId);
+            localStorage.setItem('discord_accounts', JSON.stringify(accounts));
+            localStorage.removeItem('selected_discord_id');
             location.reload();
         }
 
         function logoutAll() {
-            localStorage.removeItem('discord_accounts');
+            localStorage.clear();
             location.reload();
         }
     </script>
