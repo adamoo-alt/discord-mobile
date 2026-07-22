@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Discord Browser Instance Dashboard</title>
+    <title>Discord Dual-Mode Real Panel</title>
     <style>
         :root {
             --bg-dark: #1e1f22;
@@ -25,182 +25,293 @@
         .grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
         @media(min-width: 768px) { .grid { grid-template-columns: 1fr 1fr; } }
 
-        .card { background-color: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .card { background-color: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 12px; }
         .card h2 { font-size: 14px; color: #fff; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
 
         input, select, textarea { width: 100%; padding: 10px; background-color: var(--bg-input); border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; margin-top: 6px; margin-bottom: 10px; font-size: 13px; outline: none; }
         input:focus { border-color: var(--accent); }
 
-        .btn { background-color: var(--accent); color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s; font-size: 13px; margin-top: 4px; }
+        .btn { background-color: var(--accent); color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: 600; width: 100%; transition: background 0.2s; font-size: 13px; margin-top: 4px; text-decoration: none; display: inline-block; text-align: center; }
         .btn:hover { background-color: var(--accent-hover); }
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
+        .btn-secondary { background-color: #4e5058; }
 
-        /* Mini-okno podglądu instancji */
-        .viewport-container { position: relative; background: #000; border-radius: 8px; overflow: hidden; border: 2px solid var(--border); height: 220px; display: flex; align-items: center; justify-content: center; }
-        .viewport-container iframe { width: 100%; height: 100%; border: none; pointer-events: none; opacity: 0.85; }
-        .viewport-overlay { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; font-size: 11px; color: #fff; display: flex; align-items: center; gap: 6px; }
-        .live-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .tab { flex: 1; padding: 10px; text-align: center; background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 600; color: var(--text-muted); }
+        .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-        /* Terminal */
-        .terminal { background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px; height: 180px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; color: #35f37e; margin-bottom: 8px; }
+        .log-box { background-color: var(--bg-input); border: 1px solid var(--border); border-radius: 8px; padding: 10px; height: 160px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; color: var(--success); margin-top: 8px; }
+        .profile-box { display: flex; align-items: center; gap: 12px; background: var(--bg-input); padding: 10px; border-radius: 6px; margin-bottom: 10px; }
+        .profile-box img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         
-        .commands-list { display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; }
-        .cmd-btn { background: #35383f; border: 1px solid var(--border); color: var(--text-main); text-align: left; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: 0.2s; }
-        .cmd-btn:hover { background: var(--accent); color: #fff; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>🚀 Discord Browser Instance Hub</h1>
+    <h1>⚡ Discord Real Management Hub</h1>
 
+    <!-- Przełącznik trybów -->
+    <div class="tabs">
+        <div class="tab active" onclick="switchMode('token')">Tryb 1: Token API (Bot / User)</div>
+        <div class="tab" onclick="switchMode('oauth')">Tryb 2: OAuth2 Login (Przeglądarka)</div>
+    </div>
+
+    <!-- SEKCJA 1: TOKEN API -->
+    <div id="mode-token" class="card">
+        <h2>🔑 Autoryzacja przez Token</h2>
+        <label>Token dostępu (Bot Token lub User Token):</label>
+        <input type="password" id="input-token" placeholder="np. MTI5... lub Bot MTI5...">
+        <button class="btn btn-success" onclick="authByToken()">Połącz i Sprawdź Token</button>
+    </div>
+
+    <!-- SEKCJA 2: OAUTH2 -->
+    <div id="mode-oauth" class="card hidden">
+        <h2>🌐 Autoryzacja OAuth2 (Przeglądarka)</h2>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">Zaloguj się bezpośrednio przez oficjalne okno Discorda, aby pobrać sesję.</p>
+        <a id="oauth-link" href="#" class="btn">Zaloguj przez Discord OAuth2</a>
+    </div>
+
+    <!-- PANEL AKTYWNY PO ZALOGOWANIU -->
+    <div id="active-panel" class="card hidden">
+        <h2>👤 Aktywna Sesja</h2>
+        <div class="profile-box">
+            <img id="p-avatar" src="" alt="Avatar">
+            <div>
+                <div id="p-username" style="font-weight: bold; color: #fff;">-</div>
+                <div id="p-id" style="font-size: 11px; color: var(--text-muted);">-</div>
+            </div>
+        </div>
+        <button class="btn btn-danger" onclick="logoutSession()">Wyloguj / Zmień sesję</button>
+    </div>
+
+    <!-- NARZĘDZIA WYKONYWALNE (REALNE API) -->
     <div class="grid">
-        
-        <!-- Lewa kolumna: Podgląd instancji + Szybkie akcje -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="card">
+            <h2>📨 Wysyłanie Wiadomości (REST API)</h2>
+            <label>ID Kanału (Channel ID):</label>
+            <input type="text" id="target-channel" placeholder="np. 123456789012345678">
             
-            <!-- Mini-okno podglądu -->
-            <div class="card">
-                <h2>👁️ Podgląd Instancji w Tle (Live View)</h2>
-                <div class="viewport-container">
-                    <div class="viewport-overlay"><div class="live-dot"></div> INSTANCJA AKTYWNA: SESJA #1</div>
-                    <!-- Symulowany podgląd okna przeglądarki bota -->
-                    <iframe src="https://discord.com/channels/@me" id="instance-view"></iframe>
-                </div>
-                <button class="btn" style="margin-top: 10px;" onclick="refreshInstance()">Odśwież / Zresetuj Instancję</button>
-            </div>
-
-            <!-- Panel dołączania i wysyłania wiadomości (Spam / Licznik) -->
-            <div class="card">
-                <h2>⚡ Automatyzacja (Wiadomości & Server Join)</h2>
-                
-                <label>Dołącz na serwer (Kod / Link)</label>
-                <input type="text" id="auto-invite" placeholder="np. discord.gg/twojkod">
-                <button class="btn btn-success" onclick="instanceJoinServer()">Wykonaj Dołączenie w Instancji</button>
-
-                <label style="margin-top: 12px;">Wiadomość do wysłania</label>
-                <input type="text" id="spam-msg" placeholder="Treść wiadomości...">
-                
-                <label>Ilość powtórzeń (Licznik)</label>
-                <input type="number" id="spam-count" value="1" min="1" max="100">
-                
-                <button class="btn" onclick="instanceSendMessages()">Rozpocznij Wysyłanie</button>
-            </div>
-
+            <label>Treść wiadomości:</label>
+            <input type="text" id="msg-content" placeholder="Wpisz treść wiadomości...">
+            
+            <label>Liczba wysłanych wiadomości:</label>
+            <input type="number" id="msg-count" value="1" min="1" max="20">
+            
+            <button class="btn" onclick="sendRealMessages()">Wyślij przez API</button>
         </div>
 
-        <!-- Prawa kolumna: Zaawansowany Terminal z 10 Komendami -->
-        <div class="card" style="display: flex; flex-direction: column;">
-            <h2>💻 Terminal Sterujący (10 Komend)</h2>
-            <div class="terminal" id="terminal-output">[SYSTEM] Zainicjalizowano środowisko wirtualnej przeglądarki.
-[SYSTEM] Gotowe do wykonywania poleceń CLI. Wpisz komendę lub kliknij poniżej.</div>
-
-            <label>Wpisz komendę CLI:</label>
-            <div style="display: flex; gap: 6px;">
-                <input type="text" id="cli-input" placeholder="np. help, spam, status..." style="margin:0;">
-                <button class="btn" style="width: 80px; margin:0;" onclick="executeCli()">Wykonaj</button>
-            </div>
-
-            <label style="margin-top: 10px;">Gotowe komendy (Kliknij, aby uruchomić):</label>
-            <div class="commands-list">
-                <button class="cmd-btn" onclick="runCommand('help')">1. <b>help</b> - Wyświetl listę dostępnych 10 komend</button>
-                <button class="cmd-btn" onclick="runCommand('status')">2. <b>status</b> - Pokaż stan procesów i pamięci instancji</button>
-                <button class="cmd-btn" onclick="runCommand('clear')">3. <b>clear</b> - Wyczyść bufor terminala</button>
-                <button class="cmd-btn" onclick="runCommand('ping')">4. <b>ping</b> - Sprawdź opóźnienie sieciowe bota (Latency)</button>
-                <button class="cmd-btn" onclick="runCommand('reconnect')">5. <b>reconnect</b> - Zresetuj połączenie WebSocket przeglądarki</button>
-                <button class="cmd-btn" onclick="runCommand('dump_cookies')">6. <b>dump_cookies</b> - Wyciągnij token/ciasteczka sesji</button>
-                <button class="cmd-btn" onclick="runCommand('stealth_on')">7. <b>stealth_on</b> - Włącz tryb pełnego maskowania antybotowego</button>
-                <button class="cmd-btn" onclick="runCommand('bypass_cloudflare')">8. <b>bypass_cloudflare</b> - Automatyczny omijacz Cloudflare</button>
-                <button class="cmd-btn" onclick="runCommand('export_logs')">9. <b>export_logs</b> - Pobierz plik z logami operacyjnymi sesji</button>
-                <button class="cmd-btn" onclick="runCommand('self_destruct')">10. <b>self_destruct</b> - Bezpieczne zamknięcie i czyszczenie pamięci</button>
-            </div>
+        <div class="card">
+            <h2>🌐 Zarządzanie Serwerami / Guilds</h2>
+            <button class="btn btn-secondary" onclick="fetchUserGuilds()">Pobierz listę serwerów (Konsola)</button>
+            
+            <label style="margin-top: 12px;">ID Serwera do opuszczenia:</label>
+            <input type="text" id="leave-guild-id" placeholder="np. 123456789012345678">
+            <button class="btn btn-danger" onclick="leaveGuild()">Opuść Serwer</button>
         </div>
+    </div>
 
+    <!-- KONSOLA -->
+    <div class="card">
+        <h2>📋 Konsola Komunikacji z Discord API</h2>
+        <div class="log-box" id="log-output">[SYSTEM] Gotowy do pracy. Wybierz metodę autoryzacji u góry.</div>
     </div>
 
     <script>
-        function logTerm(text) {
-            const term = document.getElementById('terminal-output');
-            term.innerHTML += `\n> ${text}`;
-            term.scrollTop = term.scrollHeight;
+        const CLIENT_ID = "1529564710083629241";
+        const REDIRECT_URI = window.location.origin + window.location.pathname;
+        
+        // Generowanie linku OAuth2
+        const oauthUrl = `https://discord.com/api/oauth2/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=identify%20guilds%20guilds.join`;
+        document.getElementById('oauth-link').href = oauthUrl;
+
+        let currentAuth = {
+            type: null, // 'token' lub 'oauth'
+            token: null
+        };
+
+        function log(text) {
+            const box = document.getElementById('log-output');
+            box.innerHTML += `\n> ${text}`;
+            box.scrollTop = box.scrollHeight;
         }
 
-        function refreshInstance() {
-            logTerm("Odświeżanie okna instancji przeglądarki...");
-            const iframe = document.getElementById('instance-view');
-            iframe.src = iframe.src;
-            setTimeout(() => logTerm("Instancja odświeżona pomyślnie."), 1000);
+        function switchMode(mode) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            if(mode === 'token') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('mode-token').classList.remove('hidden');
+                document.getElementById('mode-oauth').classList.add('hidden');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('mode-oauth').classList.remove('hidden');
+                document.getElementById('mode-token').classList.add('hidden');
+            }
         }
 
-        function instanceJoinServer() {
-            const invite = document.getElementById('auto-invite').value;
-            if(!invite) { alert('Podaj zaproszenie!'); return; }
-            logTerm(`Symulacja w przeglądarce: Dołączanie przez link ${invite}...`);
-            setTimeout(() => logTerm("[SUKCES] Instancja pomyślnie przeszła zaproszenie i dołączyła na serwer."), 1200);
-        }
+        // Sprawdzanie tokena z URL po powrocie z OAuth2
+        window.addEventListener('DOMContentLoaded', () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const accessToken = fragment.get('access_token');
 
-        function instanceSendMessages() {
-            const msg = document.getElementById('spam-msg').value;
-            const count = parseInt(document.getElementById('spam-count').value) || 1;
-            if(!msg) { alert('Wpisz treść wiadomości!'); return; }
-
-            logTerm(`Rozpoczynanie wysyłania ${count} wiadomości przez instancję...`);
-            let i = 0;
-            const interval = setInterval(() => {
-                i++;
-                logTerm(`[Wysyłanie ${i}/${count}] -> "${msg}"`);
-                if(i >= count) {
-                    clearInterval(interval);
-                    logTerm("[ZAKOŃCZONE] Wszystkie wiadomości zostały wysłane przez przeglądarkę.");
+            if(accessToken) {
+                currentAuth = { type: 'oauth', token: accessToken };
+                localStorage.setItem('disc_auth', JSON.stringify(currentAuth));
+                window.history.replaceState({}, document.title, window.location.pathname);
+                verifyAndLoadUser(accessToken);
+            } else {
+                const saved = JSON.parse(localStorage.getItem('disc_auth'));
+                if(saved && saved.token) {
+                    currentAuth = saved;
+                    verifyAndLoadUser(saved.token);
                 }
-            }, 400);
+            }
+        });
+
+        async function authByToken() {
+            let token = document.getElementById('input-token').value.trim();
+            if(!token) { alert('Wpisz token!'); return; }
+            
+            // Automatyczne dodanie prefiksu Bot jeśli to zwykły token bota bez słowa kluczowego
+            if(!token.startsWith('Bot ') && !token.startsWith('Bearer ') && token.length > 50) {
+                // Jeśli wygląda jak bot token (długi), możemy zapytać lub spróbować z prefiksem
+            }
+
+            currentAuth = { type: 'token', token: token };
+            localStorage.setItem('disc_auth', JSON.stringify(currentAuth));
+            verifyAndLoadUser(token);
         }
 
-        function executeCli() {
-            const input = document.getElementById('cli-input');
-            runCommand(input.value.trim());
-            input.value = '';
+        async function verifyAndLoadUser(token) {
+            log("Wysyłanie zapytania weryfikacyjnego do /users/@me...");
+            try {
+                let authHeader = token.startsWith('Bot ') || token.startsWith('Bearer ') ? token : `Bot ${token}`;
+                
+                let res = await fetch('https://discord.com/api/v10/users/@me', {
+                    headers: { 'Authorization': authHeader }
+                });
+
+                if(!res.ok) {
+                    // Spróbujmy bez prefiksu Bot (dla user tokenów)
+                    res = await fetch('https://discord.com/api/v10/users/@me', {
+                        headers: { 'Authorization': token }
+                    });
+                }
+
+                if(res.ok) {
+                    let user = await res.json();
+                    log(`[SUKCES] Zalogowano pomyślnie jako: ${user.username}#${user.discriminator || '0'} (ID: ${user.id})`);
+                    
+                    document.getElementById('p-username.innerText = user.username;');
+                    document.getElementById('p-username').innerText = user.username;
+                    document.getElementById('p-id').innerText = `ID: ${user.id}`;
+                    document.getElementById('p-avatar').src = user.avatar 
+                        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` 
+                        : 'https://cdn.discordapp.com/embed/avatars/0.png';
+
+                    document.getElementById('active-panel').classList.remove('hidden');
+                    document.getElementById('mode-token').classList.add('hidden');
+                    document.getElementById('mode-oauth').classList.add('hidden');
+                } else {
+                    let err = await res.json();
+                    log(`[BŁĄD AUTORYZACI]: ${err.message || res.statusText}`);
+                    alert('Nie udało się autoryzować. Sprawdź poprawność tokena.');
+                }
+            } catch(e) {
+                log(`[SIEC] Błąd połączenia: ${e.message}`);
+            }
         }
 
-        // Obsługa 10 komend terminala
-        function runCommand(cmd) {
-            logTerm(`cmd: ${cmd}`);
-            switch(cmd.toLowerCase()) {
-                case 'help':
-                    logTerm("=== DOSTĘPNE KOMENDY (1-10) ===");
-                    logTerm("help, status, clear, ping, reconnect, dump_cookies, stealth_on, bypass_cloudflare, export_logs, self_destruct");
+        function logoutSession() {
+            localStorage.removeItem('disc_auth');
+            location.reload();
+        }
+
+        async function sendRealMessages() {
+            if(!currentAuth.token) { alert('Najpierw się zaloguj!'); return; }
+            let channelId = document.getElementById('target-channel').value.trim();
+            let content = document.getElementById('msg-content').value.trim();
+            let count = parseInt(document.getElementById('msg-count').value) || 1;
+
+            if(!channelId || !content) { alert 'Uzupełnij kanał i treść!'; return; }
+
+            log(`Rozpoczynanie wysyłania ${count} wiadomości na kanał ${channelId}...`);
+
+            let authHeader = currentAuth.token.startsWith('Bot ') || currentAuth.token.startsWith('Bearer ') ? currentAuth.token : `Bot ${currentAuth.token}`;
+
+            for(let i = 1; i <= count; i++) {
+                try {
+                    let res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': authHeader,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ content: content })
+                    });
+
+                    if(res.ok) {
+                        log(`[Wiadomość ${i}/${count}] Wysłana pomyślnie!`);
+                    } else {
+                        let err = await res.json();
+                        log(`[Błąd wiadomości ${i}]: ${err.message || res.statusText}`);
+                        break;
+                    }
+                } catch(e) {
+                    log(`[Sieć] Błąd wysyłania: ${e.message}`);
                     break;
-                case 'status':
-                    logTerm("STATUS: Instancja działa stabilnie. Zużycie RAM: 42MB. Proxy: Wyłączone.");
-                    break;
-                case 'clear':
-                    document.getElementById('terminal-output').innerHTML = "[SYSTEM] Terminal wyczyszczony.";
-                    break;
-                case 'ping':
-                    logTerm("PONG! Czas odpowiedzi sieciowej: 34ms.");
-                    break;
-                case 'reconnect':
-                    logTerm("Restartowanie gniazda sieciowego przeglądarki... Zrobione.");
-                    break;
-                case 'dump_cookies':
-                    logTerm("Zabezpieczone: Pobrano nagłówki sesji aktywnego konta.");
-                    break;
-                case 'stealth_on':
-                    logTerm("Moduł antydetekcji (Stealth Mode) został aktywowany pomyślnie.");
-                    break;
-                case 'bypass_cloudflare':
-                    logTerm("Wykrywanie wyzwania Cloudflare... Rozwiązano automatycznie.");
-                    break;
-                case 'export_logs':
-                    logTerm("Wygenerowano paczkę logów sesji do pliku tekstowego.");
-                    break;
-                case 'self_destruct':
-                    logTerm("[OSTRZEŻENIE] Zamykanie instancji i czyszczenie pamięci lokalnej...");
-                    setTimeout(() => logTerm("Sesja została bezpiecznie zamknięta."), 800);
-                    break;
-                default:
-                    logTerm(`Nieznana komenda: "${cmd}". Wpisz 'help', aby zobaczyć listę.`);
+                }
+                // Krótka pauza zapobiegająca ratelimitom
+                await new Promise(r => setTimeout(r, 600));
+            }
+        }
+
+        async function fetchUserGuilds() {
+            if(!currentAuth.token) { alert('Najpierw się zaloguj!'); return; }
+            log("Pobieranie listy serwerów...");
+            let authHeader = currentAuth.token.startsWith('Bot ') || currentAuth.token.startsWith('Bearer ') ? currentAuth.token : `Bot ${currentAuth.token}`;
+
+            try {
+                let res = await fetch('https://discord.com/api/v10/users/@me/guilds', {
+                    headers: { 'Authorization': authHeader }
+                });
+                if(res.ok) {
+                    let guilds = await res.json();
+                    log(`[SUKCES] Znaleziono serwerów: ${guilds.length}`);
+                    guilds.forEach(g => {
+                        log(` - Serwer: ${g.name} (ID: ${g.id})`);
+                    });
+                } else {
+                    log(`[Błąd] Nie udało się pobrać serwerów (wymagany odpowiedni scope/uprawnienia).`);
+                }
+            } catch(e) {
+                log(`[Sieć] Błąd: ${e.message}`);
+            }
+        }
+
+        async function leaveGuild() {
+            if(!currentAuth.token) { alert('Najpierw się zaloguj!'); return; }
+            let guildId = document.getElementById('leave-guild-id').value.trim();
+            if(!guildId) { alert('Podaj ID serwera!'); return; }
+
+            log(`Próba opuszczenia serwera ID: ${guildId}...`);
+            let authHeader = currentAuth.token.startsWith('Bot ') || currentAuth.token.startsWith('Bearer ') ? currentAuth.token : `Bot ${currentAuth.token}`;
+
+            try {
+                let res = await fetch(`https://discord.com/api/v10/users/@me/guilds/${guildId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': authHeader }
+                });
+                if(res.ok || res.status === 204) {
+                    log(`[SUKCES] Pomyślnie opuszczono serwer ${guildId}`);
+                    alert('Opuszczono serwer!');
+                } else {
+                    let err = await res.json();
+                    log(`[Błąd]: ${err.message || res.statusText}`);
+                }
+            } catch(e) {
+                log(`[Sieć] Błąd: ${e.message}`);
             }
         }
     </script>
